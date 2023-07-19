@@ -11,6 +11,7 @@ import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.geofencing.App.Companion.CHANNEL_ID
@@ -52,12 +53,10 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
 
         // setting the location callback functionality
         locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationRequest: LocationResult) {
-                super.onLocationResult(locationRequest)
+            override fun onLocationResult(locationResult: LocationResult) {
+                super.onLocationResult(locationResult)
 
-                if (locationRequest == null) return
-
-                val location = locationRequest.lastLocation
+                val location = locationResult.lastLocation
                 val latitude = location?.latitude
                 val longitude = location?.longitude
 
@@ -70,15 +69,18 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
                         // if not already try to put the phone to vibrate mode
                         if (audioManager.ringerMode != AudioManager.RINGER_MODE_VIBRATE)
                             audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        Log.d("Vibrate mode", e.message.toString())
                     }
 
                     try {
                         // try to put the phone to silent mode
                         if (audioManager.ringerMode != AudioManager.RINGER_MODE_SILENT)
                             audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        Log.d("Silent mode", e.message.toString())
                     }
+
                 } else {
                     // put phone into general mode, if not already (only once)
                     /*
@@ -129,12 +131,12 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
     override fun onConnected(bundle: Bundle?) {
         locationRequest = LocationRequest.create()
             .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-            .setInterval(1000) // update location every 10 sec
+            .setInterval(500) // update location every 5 seconds
+            .setFastestInterval(200) // 1 second
 
         // now if we have the authority to look into user's current location, do update get it
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-            ==
-            PackageManager.PERMISSION_GRANTED
+            == PackageManager.PERMISSION_GRANTED
         ) {
             LocationServices.getFusedLocationProviderClient(this)
                 .requestLocationUpdates(locationRequest, locationCallback, null)
