@@ -27,7 +27,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".BackgroundService"/>
+
+        <service
+            android:name=".BackgroundService"
+            android:enabled="true" />
+
+        <receiver android:name=".ServiceRestarterBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:label="RestartServiceWhenStop"/>
+
     </application>
 
 </manifest>

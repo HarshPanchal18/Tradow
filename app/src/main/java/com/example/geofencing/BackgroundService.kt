@@ -101,8 +101,7 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
                 lat2: Double,
                 lon2: Double
             ): Double {
-                val R = 6371 // radius of the earth
-
+                val earthRadius = 6371
                 val latDistance = Math.toRadians(abs(lat2 - lat1))
                 val lonDistance = Math.toRadians(abs(lon2 - lon1))
 
@@ -112,15 +111,15 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
 
                 val c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
-                var distance = R * c * 1000 // distance in meter
+                var distance = earthRadius * c * 1000 // distance in meter
                 distance = distance.pow(2.0)
                 return sqrt(distance)
 
             }
 
             private fun isInCampus(latitude: Double, longitude: Double): Boolean {
-                val lat = 21.1279366//22.9611167
-                val lon = 72.8597302 // 88.4335215 // 21.127936652631288, 72.85973029155082
+                val lat = 21.1279366
+                val lon = 72.8597302
 
                 // radius up to 200m is checked
                 return getDistance(lat, lon, latitude, longitude) <= radiusToCheck
@@ -132,7 +131,7 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
         locationRequest = LocationRequest.create()
             .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
             .setInterval(500) // update location every 5 seconds
-            .setFastestInterval(200) // 1 second
+            .setFastestInterval(200) // 2 seconds
 
         // now if we have the authority to look into user's current location, do update get it
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -173,9 +172,17 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
         super.onDestroy()
         if (googleApiClient!!.isConnected)
             googleApiClient?.disconnect()
+
+        try {
+            // try to put the phone to normal mode after stopping the service
+            if (audioManager.ringerMode != AudioManager.RINGER_MODE_NORMAL)
+                audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+        } catch (e: Exception) {
+            Log.d("Normal mode", e.message.toString())
+        }
     }
 
     override fun onConnectionSuspended(p0: Int) {}
 
-    override fun onConnectionFailed(p0: ConnectionResult) {}
+    override fun onConnectionFailed(connectionResult: ConnectionResult) {}
 }
