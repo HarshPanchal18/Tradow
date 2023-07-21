@@ -12,6 +12,7 @@ import android.media.AudioManager
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.geofencing.App.Companion.CHANNEL_ID
@@ -51,6 +52,26 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
             .addOnConnectionFailedListener(this)
             .build()
 
+    }
+
+    override fun onConnected(bundle: Bundle?) {
+        locationRequest = LocationRequest.create()
+            .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+            .setInterval(500) // update location every 5 seconds
+            .setFastestInterval(200) // 2 seconds
+
+        // now if we have the authority to look into user's current location, do update get it
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            LocationServices.getFusedLocationProviderClient(this)
+                .requestLocationUpdates(locationRequest, locationCallback, null)
+        }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val extras = intent?.extras
+
         // setting the location callback functionality
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
@@ -58,7 +79,9 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
 
                 val location = locationResult.lastLocation
                 val latitude = location?.latitude
+                Log.d("Current Latitude", latitude.toString())
                 val longitude = location?.longitude
+                Log.d("Current Longitude", longitude.toString())
 
                 // if the location inside the defined fence, do the following
                 if (isInCampus(latitude!!, longitude!!)) {
@@ -96,14 +119,14 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
             }
 
             private fun getDistance(
-                lat1: Double,
-                lon1: Double,
+                lat1: Double? = 0.0,
+                lon1: Double? = 0.0,
                 lat2: Double,
                 lon2: Double
             ): Double {
                 val earthRadius = 6371
-                val latDistance = Math.toRadians(abs(lat2 - lat1))
-                val lonDistance = Math.toRadians(abs(lon2 - lon1))
+                val latDistance = Math.toRadians(abs(lat2 - lat1!!))
+                val lonDistance = Math.toRadians(abs(lon2 - lon1!!))
 
                 val a = (sin(latDistance / 2) * sin(latDistance / 2)
                         + (cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2))
@@ -118,31 +141,20 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
             }
 
             private fun isInCampus(latitude: Double, longitude: Double): Boolean {
-                val lat = 21.1279366
-                val lon = 72.8597302
+                val lat = extras?.getDouble("Latitude", 0.0)
+                Log.d("Latitude of Range", lat.toString())
+                val lon = extras?.getDouble("Longitude", 0.0)
+                Log.d("Longitude of Range", lon.toString())
 
-                // radius up to 200m is checked
-                return getDistance(lat, lon, latitude, longitude) <= radiusToCheck
+                return getDistance(
+                    lat,
+                    lon,
+                    latitude,
+                    longitude
+                ) <= radiusToCheck // radius up to 100m is checked
             }
         }
-    }
 
-    override fun onConnected(bundle: Bundle?) {
-        locationRequest = LocationRequest.create()
-            .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-            .setInterval(500) // update location every 5 seconds
-            .setFastestInterval(200) // 2 seconds
-
-        // now if we have the authority to look into user's current location, do update get it
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-            == PackageManager.PERMISSION_GRANTED
-        ) {
-            LocationServices.getFusedLocationProviderClient(this)
-                .requestLocationUpdates(locationRequest, locationCallback, null)
-        }
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notificationIntent = Intent(this, MainActivity::class.java)
         val listOfIntents = arrayOfNulls<Intent>(1)
         listOfIntents[0] = notificationIntent
@@ -184,5 +196,11 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
 
     override fun onConnectionSuspended(p0: Int) {}
 
-    override fun onConnectionFailed(connectionResult: ConnectionResult) {}
+    override fun onConnectionFailed(connectionResult: ConnectionResult) {
+        Toast.makeText(
+            applicationContext,
+            connectionResult.errorMessage.toString(),
+            Toast.LENGTH_SHORT
+        ).show()
+    }
 }
