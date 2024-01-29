@@ -1,5 +1,5 @@
 package com.example.geofencing
-
+/*
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
@@ -109,10 +109,8 @@ class SecondBackgroundService : Service() {
     }
 
     private fun getDistance(
-        lat1: Double,
-        lon1: Double,
-        lat2: Double,
-        lon2: Double
+        lat1: Double, lon1: Double,
+        lat2: Double, lon2: Double
     ): Double {
         val R = 6371 // radius of the earth
 
@@ -139,3 +137,4 @@ class SecondBackgroundService : Service() {
         return getDistance(lat, lon, latitude, longitude) <= radiusToCheck
     }
 }
+*/

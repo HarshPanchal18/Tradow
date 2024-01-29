@@ -12,10 +12,12 @@ import android.media.AudioManager
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.geofencing.App.Companion.CHANNEL_ID
+import com.example.geofencing.util.LATITUDE
+import com.example.geofencing.util.LONGITUDE
+import com.example.geofencing.util.showShortToast
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.location.LocationCallback
@@ -37,7 +39,7 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
     private lateinit var audioManager: AudioManager
     private var googleApiClient: GoogleApiClient? = null
     var gotOutOfCampus = false
-    val radiusToCheck = 100.0 // meter
+    val radiusToCheck = 300.0 // meter
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -119,10 +121,8 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
             }
 
             private fun getDistance(
-                lat1: Double? = 0.0,
-                lon1: Double? = 0.0,
-                lat2: Double,
-                lon2: Double
+                lat1: Double? = 0.0, lon1: Double? = 0.0,
+                lat2: Double, lon2: Double,
             ): Double {
                 val earthRadius = 6371
                 val latDistance = Math.toRadians(abs(lat2 - lat1!!))
@@ -136,22 +136,21 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
 
                 var distance = earthRadius * c * 1000 // distance in meter
                 distance = distance.pow(2.0)
+                Log.d("Current distance", "getDistance: $distance")
                 return sqrt(distance)
 
             }
 
             private fun isInCampus(latitude: Double, longitude: Double): Boolean {
-                val lat = extras?.getDouble("Latitude", 0.0)
+                val lat = extras?.getDouble(LATITUDE, 0.0)
                 Log.d("Latitude of Range", lat.toString())
-                val lon = extras?.getDouble("Longitude", 0.0)
+                val lon = extras?.getDouble(LONGITUDE, 0.0)
                 Log.d("Longitude of Range", lon.toString())
 
                 return getDistance(
-                    lat,
-                    lon,
-                    latitude,
-                    longitude
-                ) <= radiusToCheck // radius up to 100m is checked
+                    lat, lon,
+                    latitude, longitude
+                ) <= radiusToCheck // radius up to 500m is checked
             }
         }
 
@@ -159,10 +158,10 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
         val listOfIntents = arrayOfNulls<Intent>(1)
         listOfIntents[0] = notificationIntent
         val pendingIntent = PendingIntent.getActivities(
-            this,
-            0,
-            listOfIntents,
-            PendingIntent.FLAG_IMMUTABLE
+            /* context = */ this,
+            /* requestCode = */ 0,
+            /* intents = */ listOfIntents,
+            /* flags = */ PendingIntent.FLAG_IMMUTABLE
         )
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Background service active")
@@ -182,7 +181,8 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
 
     override fun onDestroy() {
         super.onDestroy()
-        if (googleApiClient!!.isConnected)
+
+        if (googleApiClient?.isConnected == true)
             googleApiClient?.disconnect()
 
         try {
@@ -197,10 +197,6 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
     override fun onConnectionSuspended(p0: Int) {}
 
     override fun onConnectionFailed(connectionResult: ConnectionResult) {
-        Toast.makeText(
-            applicationContext,
-            connectionResult.errorMessage.toString(),
-            Toast.LENGTH_SHORT
-        ).show()
+        applicationContext.showShortToast(connectionResult.errorMessage.toString())
     }
 }
