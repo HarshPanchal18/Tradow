@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION")
 
-package com.example.geofencing
+package com.example.geofencing.service
 
 import android.Manifest
 import android.app.PendingIntent
@@ -15,6 +15,8 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.geofencing.App.Companion.CHANNEL_ID
+import com.example.geofencing.MainActivity
+import com.example.geofencing.R
 import com.example.geofencing.util.LATITUDE
 import com.example.geofencing.util.LONGITUDE
 import com.example.geofencing.util.showShortToast

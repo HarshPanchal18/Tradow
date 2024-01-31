@@ -31,11 +31,11 @@
         </activity>
 
         <service
-            android:name=".BackgroundService"
+            android:name=".service.BackgroundService"
             android:enabled="true" />
 
         <receiver
-            android:name=".ServiceRestarterBroadcastReceiver"
+            android:name=".service.ServiceRestarterBroadcastReceiver"
             android:enabled="true"
             android:exported="true"
             android:label="RestartServiceWhenStop" />

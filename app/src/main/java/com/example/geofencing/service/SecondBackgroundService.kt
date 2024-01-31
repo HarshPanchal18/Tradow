@@ -1,4 +1,4 @@
-package com.example.geofencing
+package com.example.geofencing.service
 /*
 import android.app.PendingIntent
 import android.app.Service
