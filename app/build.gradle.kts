@@ -77,4 +77,5 @@ dependencies {
 
     // Optional Accompanist permissions to request permissions in compose
     implementation("com.google.accompanist:accompanist-permissions:0.31.5-beta")
+    implementation("com.google.code.gson:gson:2.10")
 }
