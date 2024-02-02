@@ -25,12 +25,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddLocationAlt
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -80,11 +82,8 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 spots = SharedPreferencesHelper.loadArray(context)
                 var showBottomSheet by remember { mutableStateOf(false) }
-                if (showBottomSheet) {
-                    BottomSheet {
-                        showBottomSheet = false
-                    }
-                }
+                if (showBottomSheet)
+                    BottomSheet { showBottomSheet = false }
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -134,10 +133,6 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 },
-                                colors = ButtonDefaults.buttonColors(
-                                    disabledContainerColor = Color.LightGray,
-                                    disabledContentColor = Color.DarkGray
-                                ),
                             ) { Text("Start Service") }
 
                             Button(
@@ -282,24 +277,48 @@ class MainActivity : ComponentActivity() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp),
-            verticalArrangement = Arrangement.SpaceEvenly,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(10.dp)
         ) {
 
-            Text("Automatically make your phone go Silent while in Campus!")
+            Text(
+                text = "Automatically make your phone go Silent while in Campus!",
+                modifier = Modifier.padding(10.dp),
+                fontSize = MaterialTheme.typography.titleMedium.fontSize
+            )
 
-            LazyColumn {
-                items(spots) { spot ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(text = spot.title)
-                        Text(text = spot.latitude.toString())
-                        Text(text = spot.longitude.toString())
+            Card {
+                LazyColumn(modifier = Modifier.padding(10.dp)) {
+                    items(spots) { spot ->
+                        SpotItem(spot = spot)
                     }
                 }
+            }
+        }
+    }
+
+    @Composable
+    fun SpotItem(spot: Spot) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+
+            RadioButton(selected = true, onClick = { })
+
+            Column(
+                modifier = Modifier
+                    .padding(10.dp)
+                    .fillMaxWidth(),
+            ) {
+
+                Text(
+                    text = spot.title,
+                    fontSize = MaterialTheme.typography.titleLarge.fontSize,
+                    color = Color.Black.copy(0.9F)
+                )
+
+                Text(
+                    text = "${spot.latitude} : ${spot.longitude}",
+                    fontSize = MaterialTheme.typography.titleMedium.fontSize,
+                    color = Color.DarkGray
+                )
             }
         }
     }
