@@ -14,7 +14,12 @@ object SharedPreferencesHelper {
         val arr = loadArray(context)
         val jsonArray = gson.toJson(arr.plus(spotArray))
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(SPOT_ARRAY_KEY, jsonArray).apply()
+    }
 
+    fun updateArray(context: Context,spotArray: Array<Spot>) {
+        val jsonArray = gson.toJson(spotArray)
+        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(SPOT_ARRAY_KEY, jsonArray).apply()
     }
 
@@ -26,5 +31,9 @@ object SharedPreferencesHelper {
             return gson.fromJson(jsonArray, Array<Spot>::class.java)
 
         return emptyArray() // Default value if the array is not found
+    }
+
+    fun getActiveSpot(context: Context): Spot {
+        return loadArray(context).first { it.isSelected }
     }
 }

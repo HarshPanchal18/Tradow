@@ -108,16 +108,13 @@ class MainActivity : ComponentActivity() {
                                 onClick = {
                                     if (ContextCompat.checkSelfPermission(
                                             /* context = */ this@MainActivity,
-                                            /* permission = */
-                                            Manifest.permission.ACCESS_FINE_LOCATION
+                                            /* permission = */ Manifest.permission.ACCESS_FINE_LOCATION
                                         ) != PackageManager.PERMISSION_GRANTED
                                     ) {
                                         ActivityCompat.requestPermissions(
                                             /* activity = */ this@MainActivity as Activity,
-                                            /* permissions = */
-                                            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                                            /* requestCode = */
-                                            1
+                                            /* permissions = */ arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                                            /* requestCode = */ 1
                                         )
                                     } else {
                                         if (!isServiceActivated) {
@@ -165,6 +162,11 @@ class MainActivity : ComponentActivity() {
             // show an toast message asking for the permission
             this.showLongToast("Do I really need to tell, why you should give me location access??")
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        moveTaskToBack(true)
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -223,7 +225,8 @@ class MainActivity : ComponentActivity() {
                             Spot(
                                 title = spotTitle,
                                 latitude = latitude.toDouble(),
-                                longitude = longitude.toDouble()
+                                longitude = longitude.toDouble(),
+                                isSelected = false
                             )
                         )
                         SharedPreferencesHelper.saveArray(
@@ -274,6 +277,8 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun HomeLayout() {
+        var spots by remember { mutableStateOf(SharedPreferencesHelper.loadArray(this@MainActivity)) }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -286,10 +291,15 @@ class MainActivity : ComponentActivity() {
                 fontSize = MaterialTheme.typography.titleMedium.fontSize
             )
 
-            Card {
-                LazyColumn(modifier = Modifier.padding(10.dp)) {
-                    items(spots) { spot ->
-                        SpotItem(spot = spot)
+            if (spots.isNotEmpty()) {
+                Card {
+                    LazyColumn(modifier = Modifier.padding(10.dp)) {
+                        items(spots) { spot ->
+                            SpotItem(spot = spot) { selectedSpot ->
+                                spots = spots.map { it.copy(isSelected = it == selectedSpot) }.toTypedArray()
+                                SharedPreferencesHelper.updateArray(this@MainActivity,spots)
+                            }
+                        }
                     }
                 }
             }
@@ -297,10 +307,18 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun SpotItem(spot: Spot) {
+    fun SpotItem(spot: Spot, onItemSelected: (Spot) -> Unit) {
+        var selection by remember { mutableStateOf(spot.isSelected) }
         Row(verticalAlignment = Alignment.CenterVertically) {
 
-            RadioButton(selected = true, onClick = { })
+            RadioButton(
+                selected = spot.isSelected,
+                onClick = {
+                    selection = !selection
+                    spot.isSelected = !spot.isSelected
+                    this@MainActivity.showShortToast(spot.isSelected.toString())
+                    onItemSelected(spot)
+                })
 
             Column(
                 modifier = Modifier
@@ -315,7 +333,7 @@ class MainActivity : ComponentActivity() {
                 )
 
                 Text(
-                    text = "${spot.latitude} : ${spot.longitude}",
+                    text = "${spot.latitude} : ${spot.longitude} | ${spot.isSelected}",
                     fontSize = MaterialTheme.typography.titleMedium.fontSize,
                     color = Color.DarkGray
                 )

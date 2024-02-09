@@ -3,22 +3,22 @@
 package com.example.geofencing.service
 
 import android.Manifest
+import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.geofencing.App.Companion.CHANNEL_ID
 import com.example.geofencing.MainActivity
 import com.example.geofencing.R
-import com.example.geofencing.util.LATITUDE
-import com.example.geofencing.util.LONGITUDE
+import com.example.geofencing.util.SharedPreferencesHelper
 import com.example.geofencing.util.showShortToast
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
@@ -74,7 +74,7 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val extras = intent?.extras
+        //val extras = intent?.extras
 
         // setting the location callback functionality
         locationCallback = object : LocationCallback() {
@@ -144,13 +144,15 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
             }
 
             private fun isInCampus(latitude: Double, longitude: Double): Boolean {
-                val lat = extras?.getDouble(LATITUDE, 0.0)
-                Log.d("Latitude of Range", lat.toString())
-                val lon = extras?.getDouble(LONGITUDE, 0.0)
-                Log.d("Longitude of Range", lon.toString())
+                val activeSpot = SharedPreferencesHelper.getActiveSpot(this@BackgroundService)
+                val activeLat = activeSpot.latitude
+                val activeLon = activeSpot.longitude
+
+                Log.d("Latitude of Range", activeLat.toString())
+                Log.d("Longitude of Range", activeLon.toString())
 
                 return getDistance(
-                    lat, lon,
+                    activeLat, activeLon,
                     latitude, longitude
                 ) <= radiusToCheck // radius up to 500m is checked
             }
@@ -165,12 +167,16 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
             /* intents = */ listOfIntents,
             /* flags = */ PendingIntent.FLAG_IMMUTABLE
         )
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Background service active")
-            .setContentText("Tap to return")
-            .setSmallIcon(R.drawable.ic_launcher_background)
-            .setContentIntent(pendingIntent)
-            .build()
+        val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, CHANNEL_ID)
+                .setContentTitle("Background service is active")
+                .setContentText("Tap to return")
+                .setSmallIcon(R.drawable.ic_launcher_background)
+                .setContentIntent(pendingIntent)
+                .build()
+        } else {
+            TODO("VERSION.SDK_INT < O")
+        }
 
         startForeground(1, notification)
 
@@ -178,7 +184,7 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
         if (this.googleApiClient != null)
             googleApiClient?.connect()
 
-        return START_STICKY
+        return START_STICKY // used for services that are explicitly started and stopped as needed
     }
 
     override fun onDestroy() {
@@ -186,6 +192,8 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
 
         if (googleApiClient?.isConnected == true)
             googleApiClient?.disconnect()
+
+        this.showShortToast("Service is stopping...")
 
         try {
             // try to put the phone to normal mode after stopping the service
