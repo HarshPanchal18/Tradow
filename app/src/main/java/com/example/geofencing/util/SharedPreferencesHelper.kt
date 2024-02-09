@@ -6,7 +6,7 @@ import com.google.gson.Gson
 
 object SharedPreferencesHelper {
 
-    private const val PREF_NAME = "Geo"
+    const val PREF_NAME = "Geo"
     private const val SPOT_ARRAY_KEY = "arrayOfSpots"
     private val gson = Gson()
 

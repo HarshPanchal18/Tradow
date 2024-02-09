@@ -8,7 +8,9 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,15 +27,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddLocationAlt
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -51,6 +55,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -73,32 +78,28 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        sharedPref = getSharedPreferences("", Context.MODE_PRIVATE)
+        sharedPref = getSharedPreferences(SharedPreferencesHelper.PREF_NAME, Context.MODE_PRIVATE)
 
         setContent {
             GeofencingTheme {
 
-                val isServiceActivated = false
                 val context = LocalContext.current
                 spots = SharedPreferencesHelper.loadArray(context)
                 var showBottomSheet by remember { mutableStateOf(false) }
                 if (showBottomSheet)
                     BottomSheet { showBottomSheet = false }
 
+                var pressedTime: Long = 0
+                BackHandler(enabled = true) {
+                    if (pressedTime + 1800 > System.currentTimeMillis())
+                        finish()
+                    else
+                        this.showShortToast("Press again to exit")
+                    pressedTime = System.currentTimeMillis()
+                }
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    floatingActionButton = {
-                        ExtendedFloatingActionButton(
-                            text = { Text(text = "Add spot") },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Default.AddLocationAlt,
-                                    contentDescription = null
-                                )
-                            },
-                            onClick = { showBottomSheet = true }
-                        )
-                    },
                     bottomBar = {
                         Row(
                             horizontalArrangement = Arrangement.SpaceAround,
@@ -113,37 +114,52 @@ class MainActivity : ComponentActivity() {
                                     ) {
                                         ActivityCompat.requestPermissions(
                                             /* activity = */ this@MainActivity as Activity,
-                                            /* permissions = */ arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                                            /* requestCode = */ 1
+                                            /* permissions = */
+                                            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                                            /* requestCode = */
+                                            1
                                         )
                                     } else {
-                                        if (!isServiceActivated) {
-                                            val backgroundServiceIntent =
-                                                Intent(
-                                                    this@MainActivity,
-                                                    BackgroundService::class.java
-                                                )
+                                        val backgroundServiceIntent =
+                                            Intent(
+                                                this@MainActivity,
+                                                BackgroundService::class.java
+                                            )
 
-                                            // start the service
-                                            startForegroundService(context, backgroundServiceIntent)
-                                            this@MainActivity.showShortToast("Service Started Successfully!")
-                                        }
+                                        // start the service
+                                        startService(backgroundServiceIntent)
+                                        this@MainActivity.showShortToast("Service Started Successfully!")
                                     }
                                 },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Green.copy(0.7F),
+                                )
                             ) { Text("Start Service") }
 
                             Button(
                                 onClick = {
                                     // call an intent to stop the service
                                     stopService(Intent(context, BackgroundService::class.java))
-                                    this@MainActivity.showShortToast("Service Stopped!")
+                                    // this@MainActivity.showShortToast("Service Stopped!")
                                 },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Red.copy(0.7F),
+                                )
                             ) { Text("Stop Service") }
+
+                            SmallFloatingActionButton(
+                                onClick = { showBottomSheet = true },
+                                containerColor = Color.Yellow
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AddLocationAlt,
+                                    contentDescription = null
+                                )
+                            }
                         }
                     }
                 ) {
-                    @Suppress("UNUSED_EXPRESSION") it
-                    HomeLayout()
+                    HomeLayout(modifier = Modifier.padding(it))
                 }
             }
         }
@@ -174,14 +190,15 @@ class MainActivity : ComponentActivity() {
     fun BottomSheet(onDismiss: () -> Unit) {
         val modalBottomSheetState = rememberModalBottomSheetState()
 
-        ModalBottomSheet(onDismissRequest = { onDismiss() },
+        ModalBottomSheet(
+            onDismissRequest = { onDismiss() },
             sheetState = modalBottomSheetState,
-            dragHandle = { BottomSheetDefaults.DragHandle() }
+            dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
         ) {
-            BottomSheetLayout { newSpot ->
+            BottomSheetLayout(onAdd = { newSpot ->
                 spots.plus(newSpot)
                 onDismiss()
-            }
+            })
         }
     }
 
@@ -276,11 +293,11 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun HomeLayout() {
+    fun HomeLayout(modifier: Modifier) {
         var spots by remember { mutableStateOf(SharedPreferencesHelper.loadArray(this@MainActivity)) }
 
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
                 .padding(10.dp)
         ) {
@@ -296,8 +313,9 @@ class MainActivity : ComponentActivity() {
                     LazyColumn(modifier = Modifier.padding(10.dp)) {
                         items(spots) { spot ->
                             SpotItem(spot = spot) { selectedSpot ->
-                                spots = spots.map { it.copy(isSelected = it == selectedSpot) }.toTypedArray()
-                                SharedPreferencesHelper.updateArray(this@MainActivity,spots)
+                                spots = spots.map { it.copy(isSelected = it == selectedSpot) }
+                                    .toTypedArray()
+                                SharedPreferencesHelper.updateArray(this@MainActivity, spots)
                             }
                         }
                     }
@@ -316,28 +334,43 @@ class MainActivity : ComponentActivity() {
                 onClick = {
                     selection = !selection
                     spot.isSelected = !spot.isSelected
-                    this@MainActivity.showShortToast(spot.isSelected.toString())
                     onItemSelected(spot)
-                })
+                },
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = Color(0xFF92F026),
+                    unselectedColor = Color(0xFF265FF0),
+                )
+            )
 
             Column(
                 modifier = Modifier
                     .padding(10.dp)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .clickable { onItemSelected(spot) },
             ) {
 
                 Text(
-                    text = spot.title,
+                    text = spot.title.trim(),
                     fontSize = MaterialTheme.typography.titleLarge.fontSize,
-                    color = Color.Black.copy(0.9F)
+                    color = Color.Black.copy(0.9F),
                 )
 
-                Text(
-                    text = "${spot.latitude} : ${spot.longitude} | ${spot.isSelected}",
-                    fontSize = MaterialTheme.typography.titleMedium.fontSize,
-                    color = Color.DarkGray
-                )
+                if (spot.isSelected)
+                    Text(
+                        text = "${spot.latitude} : ${spot.longitude}",
+                        fontSize = MaterialTheme.typography.titleMedium.fontSize,
+                        color = Color.DarkGray
+                    )
             }
+        }
+    }
+
+    @Preview(showBackground = true)
+    @Composable
+    fun Preview() {
+        Column {
+            SpotItem(spot = Spot("Home", 52.268525, 41.8496, true), onItemSelected = {})
+            SpotItem(spot = Spot("Home", 52.268525, 41.8496, false), onItemSelected = {})
         }
     }
 }

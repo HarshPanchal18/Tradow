@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -33,13 +34,14 @@
 
         <service
             android:name=".service.BackgroundService"
+            android:foregroundServiceType="location"
             android:enabled="true" />
 
-        <receiver
+        <!--<receiver
             android:name=".service.ServiceRestarterBroadcastReceiver"
             android:enabled="true"
             android:exported="true"
-            android:label="RestartServiceWhenStop" />
+            android:label="RestartServiceWhenStop" />-->
 
     </application>
 
