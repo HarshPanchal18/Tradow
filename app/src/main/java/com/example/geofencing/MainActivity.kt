@@ -25,12 +25,14 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddLocationAlt
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -41,6 +43,7 @@ import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,9 +56,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -109,7 +114,8 @@ class MainActivity : ComponentActivity() {
                                 onClick = {
                                     if (ContextCompat.checkSelfPermission(
                                             /* context = */ this@MainActivity,
-                                            /* permission = */ Manifest.permission.ACCESS_FINE_LOCATION
+                                            /* permission = */
+                                            Manifest.permission.ACCESS_FINE_LOCATION
                                         ) != PackageManager.PERMISSION_GRANTED
                                     ) {
                                         ActivityCompat.requestPermissions(
@@ -120,32 +126,40 @@ class MainActivity : ComponentActivity() {
                                             1
                                         )
                                     } else {
-                                        val backgroundServiceIntent =
-                                            Intent(
-                                                this@MainActivity,
-                                                BackgroundService::class.java
-                                            )
+                                        when {
+                                            spots.isEmpty() -> showBottomSheet = true
 
-                                        // start the service
-                                        startService(backgroundServiceIntent)
-                                        this@MainActivity.showShortToast("Service Started Successfully!")
+                                            spots.any { it.isSelected } -> {
+                                                val backgroundServiceIntent =
+                                                    Intent(
+                                                        this@MainActivity,
+                                                        BackgroundService::class.java
+                                                    )
+                                                startService(backgroundServiceIntent)
+                                                this@MainActivity.showShortToast("Service Started Successfully!")
+                                            }
+
+                                            else ->
+                                                this@MainActivity.showShortToast("Please select spot to track!")
+
+                                        }
                                     }
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Color.Green.copy(0.7F),
                                 )
-                            ) { Text("Start Service") }
+                            ) { Text("Start Tracking") }
 
                             Button(
                                 onClick = {
                                     // call an intent to stop the service
                                     stopService(Intent(context, BackgroundService::class.java))
-                                    // this@MainActivity.showShortToast("Service Stopped!")
+                                    finish()
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Color.Red.copy(0.7F),
                                 )
-                            ) { Text("Stop Service") }
+                            ) { Text("Stop & Exit") }
 
                             SmallFloatingActionButton(
                                 onClick = { showBottomSheet = true },
@@ -159,6 +173,10 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) {
+                    LaunchedEffect(spots) {
+                        SharedPreferencesHelper.updateArray(this@MainActivity,spots)
+                        //spots =SharedPreferencesHelper.loadArray(this@MainActivity)
+                    }
                     HomeLayout(modifier = Modifier.padding(it))
                 }
             }
@@ -193,7 +211,7 @@ class MainActivity : ComponentActivity() {
         ModalBottomSheet(
             onDismissRequest = { onDismiss() },
             sheetState = modalBottomSheetState,
-            dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) }
+            dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) },
         ) {
             BottomSheetLayout(onAdd = { newSpot ->
                 spots.plus(newSpot)
@@ -213,9 +231,19 @@ class MainActivity : ComponentActivity() {
 
         Column(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(8.dp)
                 .padding(bottom = 20.dp)
         ) {
+            Text(
+                text = "Add new track spot",
+                fontWeight = FontWeight.Bold,
+                fontSize = MaterialTheme.typography.titleLarge.fontSize,
+                style = TextStyle(fontStyle = FontStyle.Italic),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp)
+            )
+
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
@@ -240,9 +268,9 @@ class MainActivity : ComponentActivity() {
                     onClick = {
                         val newSpot = arrayOf(
                             Spot(
-                                title = spotTitle,
-                                latitude = latitude.toDouble(),
-                                longitude = longitude.toDouble(),
+                                title = spotTitle.trim(),
+                                latitude = latitude.trim().toDouble(),
+                                longitude = longitude.trim().toDouble(),
                                 isSelected = false
                             )
                         )
@@ -294,7 +322,6 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun HomeLayout(modifier: Modifier) {
-        var spots by remember { mutableStateOf(SharedPreferencesHelper.loadArray(this@MainActivity)) }
 
         Column(
             modifier = modifier
@@ -312,8 +339,8 @@ class MainActivity : ComponentActivity() {
                 Card {
                     LazyColumn(modifier = Modifier.padding(10.dp)) {
                         items(spots) { spot ->
-                            SpotItem(spot = spot) { selectedSpot ->
-                                spots = spots.map { it.copy(isSelected = it == selectedSpot) }
+                            SpotItem(spot = spot) {
+                                spots = spots.map { it.copy(isSelected = it == spot) }
                                     .toTypedArray()
                                 SharedPreferencesHelper.updateArray(this@MainActivity, spots)
                             }
@@ -325,7 +352,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun SpotItem(spot: Spot, onItemSelected: (Spot) -> Unit) {
+    fun SpotItem(spot: Spot, onItemSelected: () -> Unit) {
         var selection by remember { mutableStateOf(spot.isSelected) }
         Row(verticalAlignment = Alignment.CenterVertically) {
 
@@ -334,7 +361,7 @@ class MainActivity : ComponentActivity() {
                 onClick = {
                     selection = !selection
                     spot.isSelected = !spot.isSelected
-                    onItemSelected(spot)
+                    onItemSelected()
                 },
                 colors = RadioButtonDefaults.colors(
                     selectedColor = Color(0xFF92F026),
@@ -345,8 +372,8 @@ class MainActivity : ComponentActivity() {
             Column(
                 modifier = Modifier
                     .padding(10.dp)
-                    .fillMaxWidth()
-                    .clickable { onItemSelected(spot) },
+                    .weight(1F)
+                    .clickable { onItemSelected() },
             ) {
 
                 Text(
@@ -362,15 +389,21 @@ class MainActivity : ComponentActivity() {
                         color = Color.DarkGray
                     )
             }
+
+            IconButton(onClick = {
+                val spotList = spots.toMutableList()
+                spotList.remove(spot)
+                spots = spotList.toTypedArray()
+
+                SharedPreferencesHelper.updateArray(this@MainActivity, spots)
+            }) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = null,
+                    modifier = Modifier.padding(8.dp)
+                )
+            }
         }
     }
 
-    @Preview(showBackground = true)
-    @Composable
-    fun Preview() {
-        Column {
-            SpotItem(spot = Spot("Home", 52.268525, 41.8496, true), onItemSelected = {})
-            SpotItem(spot = Spot("Home", 52.268525, 41.8496, false), onItemSelected = {})
-        }
-    }
 }
