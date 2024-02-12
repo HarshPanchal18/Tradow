@@ -12,7 +12,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -47,6 +46,7 @@ import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,8 +61,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -76,7 +76,11 @@ import com.example.geofencing.service.BackgroundService
 import com.example.geofencing.ui.theme.GeofencingTheme
 import com.example.geofencing.util.LATITUDE
 import com.example.geofencing.util.LONGITUDE
-import com.example.geofencing.util.SharedPreferencesHelper
+import com.example.geofencing.util.SharedPreferencesHelper.PREF_NAME
+import com.example.geofencing.util.SharedPreferencesHelper.loadSpots
+import com.example.geofencing.util.SharedPreferencesHelper.saveSpots
+import com.example.geofencing.util.SharedPreferencesHelper.updateSpots
+import com.example.geofencing.util.noRippleClickable
 import com.example.geofencing.util.showLongToast
 import com.example.geofencing.util.showShortToast
 import java.util.Locale
@@ -84,18 +88,18 @@ import java.util.Locale
 @Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
     private lateinit var sharedPref: SharedPreferences
-    private lateinit var spots: Array<Spot>
+    private lateinit var spots: MutableState<Array<Spot>>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        sharedPref = getSharedPreferences(SharedPreferencesHelper.PREF_NAME, Context.MODE_PRIVATE)
+        sharedPref = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
         setContent {
             GeofencingTheme {
 
                 val context = LocalContext.current
-                spots = SharedPreferencesHelper.loadArray(context)
+                spots = remember { mutableStateOf(loadSpots(context)) }
                 var showBottomSheet by remember { mutableStateOf(false) }
                 if (showBottomSheet)
                     BottomSheet { showBottomSheet = false }
@@ -136,9 +140,9 @@ class MainActivity : ComponentActivity() {
                                             )
                                         } else {
                                             when {
-                                                spots.isEmpty() -> showBottomSheet = true
+                                                spots.value.isEmpty() -> showBottomSheet = true
 
-                                                spots.any { it.isSelected } -> {
+                                                spots.value.any { it.isSelected } -> {
                                                     val backgroundServiceIntent =
                                                         Intent(
                                                             this@MainActivity,
@@ -222,7 +226,8 @@ class MainActivity : ComponentActivity() {
             dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) },
         ) {
             BottomSheetLayout(onAdd = { newSpot ->
-                spots.plus(newSpot)
+                spots.value.plus(newSpot)
+                spots.value = loadSpots(this@MainActivity)
                 onDismiss()
             })
         }
@@ -287,7 +292,7 @@ class MainActivity : ComponentActivity() {
                                 isSelected = false
                             )
                         )
-                        SharedPreferencesHelper.saveArray(
+                        saveSpots(
                             context = this@MainActivity,
                             spotArray = newSpot
                         )
@@ -359,14 +364,14 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            if (spots.isNotEmpty()) {
+            if (spots.value.isNotEmpty()) {
                 Card {
                     LazyColumn(modifier = Modifier.padding(10.dp)) {
-                        items(spots) { spot ->
+                        items(spots.value) { spot ->
                             SpotItem(spot = spot) {
-                                spots = spots.map { it.copy(isSelected = it == spot) }
+                                spots.value = spots.value.map { it.copy(isSelected = it == spot) }
                                     .toTypedArray()
-                                SharedPreferencesHelper.updateArray(this@MainActivity, spots)
+                                updateSpots(this@MainActivity, spots.value)
                             }
                         }
                     }
@@ -398,7 +403,7 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier
                     .padding(10.dp)
                     .weight(1F)
-                    .clickable(role = Role.Button) {
+                    .noRippleClickable {
                         selection = !selection
                         spot.isSelected = !spot.isSelected
                         onItemSelected()
@@ -407,31 +412,32 @@ class MainActivity : ComponentActivity() {
                 Text(
                     text = spot.title.trim(),
                     fontSize = MaterialTheme.typography.titleLarge.fontSize,
+                    fontFamily = FontFamily.SansSerif
                 )
 
                 if (spot.isSelected)
                     Text(
                         text = "${spot.latitude} : ${spot.longitude}",
-                        fontSize = MaterialTheme.typography.titleMedium.fontSize,
+                        fontSize = MaterialTheme.typography.titleSmall.fontSize,
                         color = MaterialTheme.colorScheme.onBackground.copy(0.75F),
                         fontStyle = FontStyle.Italic
                     )
             }
 
-            IconButton(onClick = {
-                val spotList = spots.toMutableList()
-                spotList.remove(spot)
-                spots = spotList.toTypedArray()
+            if (!spot.isSelected)
+                IconButton(onClick = {
+                    val spotList = spots.value.toMutableList()
+                    spotList.remove(spot)
+                    spots.value = spotList.toTypedArray()
 
-                SharedPreferencesHelper.updateArray(this@MainActivity, spots)
-            }) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = null,
-                    modifier = Modifier.padding(8.dp)
-                )
-            }
+                    updateSpots(this@MainActivity, spots.value)
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
         }
     }
-
 }
