@@ -23,7 +23,6 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.Geofencing">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -36,12 +35,6 @@
             android:name=".service.BackgroundService"
             android:foregroundServiceType="location"
             android:enabled="true" />
-
-        <!--<receiver
-            android:name=".service.ServiceRestarterBroadcastReceiver"
-            android:enabled="true"
-            android:exported="true"
-            android:label="RestartServiceWhenStop" />-->
 
     </application>
 
