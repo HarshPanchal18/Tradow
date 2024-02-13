@@ -33,7 +33,7 @@ object SharedPreferencesHelper {
         return emptyArray() // Default value if the array is not found
     }
 
-    fun getActiveSpot(context: Context): Spot {
-        return loadSpots(context).first { it.isSelected }
+    fun getActiveSpot(context: Context): Spot? {
+        return loadSpots(context).firstOrNull { it.isSelected }
     }
 }

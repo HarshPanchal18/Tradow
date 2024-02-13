@@ -18,7 +18,10 @@ import androidx.core.content.ContextCompat
 import com.example.geofencing.App.Companion.CHANNEL_ID
 import com.example.geofencing.MainActivity
 import com.example.geofencing.R
+import com.example.geofencing.util.LATITUDE
+import com.example.geofencing.util.LONGITUDE
 import com.example.geofencing.util.SharedPreferencesHelper
+import com.example.geofencing.util.SharedPreferencesHelper.PREF_NAME
 import com.example.geofencing.util.showShortToast
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
@@ -41,7 +44,7 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
     private lateinit var audioManager: AudioManager
     private var googleApiClient: GoogleApiClient? = null
     var gotOutOfCampus = false
-    val radiusToCheck = 300.0 // meter
+    val radiusToCheck = 100.0 // meter
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -74,21 +77,27 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        //val extras = intent?.extras
 
         // setting the location callback functionality
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 super.onLocationResult(locationResult)
 
+                val pref = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+
                 val location = locationResult.lastLocation
-                val latitude = location?.latitude
+                val latitude = location?.latitude ?: 0.0
                 Log.d("Current Latitude", latitude.toString())
-                val longitude = location?.longitude
+                val longitude = location?.longitude ?: 0.0
                 Log.d("Current Longitude", longitude.toString())
 
+                pref.edit().apply {
+                    putString(LATITUDE, latitude.toString())
+                    putString(LONGITUDE, longitude.toString())
+                }.apply()
+
                 // if the location inside the defined fence, do the following
-                if (isInCampus(latitude!!, longitude!!)) {
+                if (isInCampus(latitude, longitude)) {
                     gotOutOfCampus = true
 
                     try {
@@ -123,12 +132,12 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
             }
 
             private fun getDistance(
-                lat1: Double? = 0.0, lon1: Double? = 0.0,
+                lat1: Double = 0.0, lon1: Double = 0.0,
                 lat2: Double, lon2: Double,
             ): Double {
                 val earthRadius = 6371
-                val latDistance = Math.toRadians(abs(lat2 - lat1!!))
-                val lonDistance = Math.toRadians(abs(lon2 - lon1!!))
+                val latDistance = Math.toRadians(abs(lat2 - lat1))
+                val lonDistance = Math.toRadians(abs(lon2 - lon1))
 
                 val a = (sin(latDistance / 2) * sin(latDistance / 2)
                         + (cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2))
@@ -145,8 +154,8 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
 
             private fun isInCampus(latitude: Double, longitude: Double): Boolean {
                 val activeSpot = SharedPreferencesHelper.getActiveSpot(this@BackgroundService)
-                val activeLat = activeSpot.latitude
-                val activeLon = activeSpot.longitude
+                val activeLat = activeSpot?.latitude ?: 0.0
+                val activeLon = activeSpot?.longitude ?: 0.0
 
                 Log.d("Latitude of Range", activeLat.toString())
                 Log.d("Longitude of Range", activeLon.toString())
@@ -193,7 +202,9 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
         if (googleApiClient?.isConnected == true)
             googleApiClient?.disconnect()
 
-        this.showShortToast("Service is stopping...")
+        audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+
+        //this.showShortToast("Service is stopping...")
 
         try {
             // try to put the phone to normal mode after stopping the service

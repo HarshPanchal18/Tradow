@@ -24,13 +24,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddLocationAlt
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -44,6 +45,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -57,7 +59,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -67,6 +68,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -98,11 +100,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             GeofencingTheme {
 
-                val context = LocalContext.current
-                spots = remember { mutableStateOf(loadSpots(context)) }
+                spots = remember { mutableStateOf(loadSpots(this)) }
                 var showBottomSheet by remember { mutableStateOf(false) }
                 if (showBottomSheet)
-                    BottomSheet { showBottomSheet = false }
+                    BottomSheet(
+                        onDismiss = {
+                            stopService(Intent(this, BackgroundService::class.java))
+                            showBottomSheet = false
+                        }
+                    )
 
                 var pressedTime: Long = 0
                 BackHandler(enabled = true) {
@@ -120,7 +126,7 @@ class MainActivity : ComponentActivity() {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 8.dp)
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Row {
                                 Button(
@@ -149,11 +155,11 @@ class MainActivity : ComponentActivity() {
                                                             BackgroundService::class.java
                                                         )
                                                     startService(backgroundServiceIntent)
-                                                    this@MainActivity.showShortToast("Service Started Successfully!")
+                                                    //this@MainActivity.showShortToast("Service Started Successfully!")
                                                 }
 
                                                 else ->
-                                                    this@MainActivity.showShortToast("Please select spot to track!")
+                                                    this@MainActivity.showShortToast("Kindly choose a site to monitor!")
 
                                             }
                                         }
@@ -161,14 +167,19 @@ class MainActivity : ComponentActivity() {
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(0xFF5CB34D),
                                     )
-                                ) { Text("Start Tracking") }
+                                ) { Text(text = "Start") }
 
                                 Spacer(modifier = Modifier.width(8.dp))
 
                                 Button(
                                     onClick = {
                                         // call an intent to stop the service
-                                        stopService(Intent(context, BackgroundService::class.java))
+                                        stopService(
+                                            Intent(
+                                                this@MainActivity,
+                                                BackgroundService::class.java
+                                            )
+                                        )
                                         finish()
                                     },
                                     colors = ButtonDefaults.buttonColors(
@@ -179,11 +190,13 @@ class MainActivity : ComponentActivity() {
 
                             SmallFloatingActionButton(
                                 onClick = { showBottomSheet = true },
-                                containerColor = Color.Yellow
+                                containerColor = MaterialTheme.colorScheme.background,
+                                shape = CircleShape
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.AddLocationAlt,
-                                    contentDescription = null
+                                    imageVector = Icons.Rounded.AddCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onBackground
                                 )
                             }
                         }
@@ -202,7 +215,7 @@ class MainActivity : ComponentActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            this.showShortToast("Service Started Successfully!")
+            this.showShortToast("Monitoring started successfully!")
             startForegroundService(this, Intent(this, BackgroundService::class.java))
         } else {
             // show an toast message asking for the permission
@@ -223,13 +236,17 @@ class MainActivity : ComponentActivity() {
         ModalBottomSheet(
             onDismissRequest = { onDismiss() },
             sheetState = modalBottomSheetState,
-            dragHandle = { BottomSheetDefaults.DragHandle(color = Color.Gray) },
+            dragHandle = {
+                BottomSheetDefaults.DragHandle(
+                    color = MaterialTheme.colorScheme.onBackground.copy(0.9F)
+                )
+            },
         ) {
-            BottomSheetLayout(onAdd = { newSpot ->
+            BottomSheetLayout { newSpot ->
                 spots.value.plus(newSpot)
                 spots.value = loadSpots(this@MainActivity)
                 onDismiss()
-            })
+            }
         }
     }
 
@@ -241,6 +258,9 @@ class MainActivity : ComponentActivity() {
         var longitude by remember { mutableStateOf("") }
         val focusManager = LocalFocusManager.current
         val keyboardManager = LocalSoftwareKeyboardController.current
+        val focusedIndicatorColor = MaterialTheme.colorScheme.onBackground.copy(0.9F)
+
+        startService(Intent(this@MainActivity, BackgroundService::class.java))
 
         Column(
             modifier = Modifier
@@ -262,6 +282,46 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
+            Button(
+                onClick = {
+                    if (ContextCompat.checkSelfPermission(
+                            this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        ActivityCompat.requestPermissions(
+                            this@MainActivity as Activity,
+                            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1
+                        )
+                    } else {
+                        latitude = sharedPref.getString(LATITUDE, "") ?: ""
+                        longitude = sharedPref.getString(LONGITUDE, "") ?: ""
+                        spotTitle = "Spot"
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 6.dp)
+                    .padding(top = 8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.onBackground.copy(0.9F),
+                    contentColor = MaterialTheme.colorScheme.background
+                )
+            ) {
+                Text(
+                    text = "Fill current address",
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            Text(
+                text = "OR",
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .fillMaxWidth()
+            )
+
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
@@ -281,6 +341,9 @@ class MainActivity : ComponentActivity() {
                     keyboardActions = KeyboardActions(onNext = {
                         focusManager.moveFocus(FocusDirection.Down)
                     }),
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = focusedIndicatorColor
+                    )
                 )
                 Button(
                     onClick = {
@@ -298,11 +361,15 @@ class MainActivity : ComponentActivity() {
                         )
                         onAdd(newSpot)
                     },
-                    enabled = spotTitle.isNotEmpty() && latitude.isNotEmpty() && longitude.isNotEmpty()
+                    enabled = spotTitle.isNotEmpty() && latitude.isNotEmpty() && longitude.isNotEmpty(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.onBackground.copy(0.9F),
+                        contentColor = MaterialTheme.colorScheme.background
+                    )
                 ) { Text(text = "Add") }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Row(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
@@ -319,6 +386,9 @@ class MainActivity : ComponentActivity() {
                     keyboardActions = KeyboardActions(
                         onNext = { focusManager.moveFocus(FocusDirection.Next) }
                     ),
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = focusedIndicatorColor
+                    )
                 )
 
                 OutlinedTextField(
@@ -333,8 +403,12 @@ class MainActivity : ComponentActivity() {
                         keyboardType = KeyboardType.Number
                     ),
                     keyboardActions = KeyboardActions(onDone = { keyboardManager?.hide() }),
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = focusedIndicatorColor
+                    )
                 )
             }
+
         }
     }
 
@@ -358,7 +432,7 @@ class MainActivity : ComponentActivity() {
                 )
 
                 Text(
-                    text = "While inside campus, your phone automatically goes silent!", // Your phone will automatically go silent while you're on campus!
+                    text = "While on site, your phone automatically goes silent!", // Your phone will automatically go silent while you're on campus!
                     modifier = Modifier.padding(10.dp),
                     fontSize = MaterialTheme.typography.titleLarge.fontSize,
                 )
@@ -395,7 +469,7 @@ class MainActivity : ComponentActivity() {
                     Icons.Default.Circle,
                     contentDescription = "Selected option",
                     modifier = Modifier.size(20.dp),
-                    tint = if (spot.isSelected) Color.Green else Color.Gray
+                    tint = if (spot.isSelected) Color(0xFF6FE05C) else Color.Gray
                 )
             }
 
