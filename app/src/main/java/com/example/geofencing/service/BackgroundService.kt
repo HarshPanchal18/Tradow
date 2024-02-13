@@ -178,7 +178,7 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
         )
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, CHANNEL_ID)
-                .setContentTitle("Background service is active")
+                .setContentTitle("Tradow monitoring is active")
                 .setContentText("Tap to return")
                 .setSmallIcon(R.drawable.ic_launcher_background)
                 .setContentIntent(pendingIntent)
