@@ -22,7 +22,7 @@ Enjoy the convenience of having your phone adapt to your surroundings without ma
 * `Privacy-Focused`: Your location data is used solely for geofence functionality and is never shared without your consent.
 
 ## Getting Started:
-1. Download and install Tradow from the Release.
+1. Download and install Tradow from the [Release](https://github.com/HarshPanchal18/Tradow/releases/tag/v1.1).
 2. Tap the "+" button to add a new spot. 
 3. Fetch a location using the "Fill current address" button or manually input the address. 
 4. Save the geofence by pressing on "Add" button and repeat for other locations. 
@@ -42,7 +42,7 @@ Enjoy the convenience of having your phone adapt to your surroundings without ma
 ## Additional Notes:
 * This app requires location permissions to function correctly.
 * We are committed to your privacy and data security.
-* For feedback or suggestions, please contact us at ![LinkedIn](https://www.linkedin.com/in/harshpanchal18/).
+* For feedback or suggestions, please contact me at [LinkedIn](https://www.linkedin.com/in/harshpanchal18/).
 
 ## Feedback
 * I welcome all user feedback and suggestions to continuously improve the app and optimize the utilization of geofencing for an enhanced user experience.
