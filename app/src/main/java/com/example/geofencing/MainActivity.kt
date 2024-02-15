@@ -13,6 +13,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +57,7 @@ import com.example.geofencing.util.SharedPreferencesHelper.loadSpots
 import com.example.geofencing.util.SharedPreferencesHelper.updateSpots
 import com.example.geofencing.util.showLongToast
 import com.example.geofencing.util.showShortToast
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
@@ -68,6 +71,24 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             GeofencingTheme {
+
+                val isDarkMode = isSystemInDarkTheme()
+                val systemUiController = rememberSystemUiController()
+                val statusBarColor = MaterialTheme.colorScheme.surface
+                val navigationBarColor = MaterialTheme.colorScheme.primary
+
+                DisposableEffect(isDarkMode) {
+                    systemUiController.setNavigationBarColor(
+                        color = statusBarColor,
+                        darkIcons = isDarkMode
+                    )
+                    systemUiController.setStatusBarColor(
+                        color =  navigationBarColor,
+                        darkIcons = isDarkMode
+                    )
+
+                    onDispose { }
+                }
 
                 spots = remember { mutableStateOf(loadSpots(this)) }
                 var showBottomSheet by remember { mutableStateOf(false) }
@@ -148,10 +169,11 @@ class MainActivity : ComponentActivity() {
                                 spots.value.isEmpty() -> forOpenBottomSheet()
 
                                 spots.value.any { it.isSelected } -> {
-                                    val manager = getSystemService(LOCATION_SERVICE) as LocationManager
+                                    val manager =
+                                        getSystemService(LOCATION_SERVICE) as LocationManager
                                     if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER))
                                         this.showShortToast("Please turn on location to get started")
-                                        //startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                                    //startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
 
                                     val backgroundServiceIntent =
                                         Intent(

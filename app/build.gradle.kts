@@ -23,6 +23,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -73,5 +74,6 @@ dependencies {
 
     // Optional Accompanist permissions to request permissions in compose
     implementation("com.google.accompanist:accompanist-permissions:0.31.5-beta")
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.27.0")
     implementation("com.google.code.gson:gson:2.10")
 }
