@@ -120,6 +120,9 @@ fun BottomSheetLayout(context: Context, onAdd: (Array<Spot>) -> Unit) {
     context.startService(Intent(context, BackgroundService::class.java))
     val sharedPref = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
+    //val coroutineScope = rememberCoroutineScope()
+    //val bringIntoViewRequester = BringIntoViewRequester()
+
     Column(
         modifier = Modifier
             .padding(8.dp)
@@ -207,7 +210,14 @@ fun BottomSheetLayout(context: Context, onAdd: (Array<Spot>) -> Unit) {
                 }),
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = focusedIndicatorColor
-                )
+                ),
+                /*modifier = Modifier.onFocusEvent { event ->
+                    if(event.isFocused) {
+                        coroutineScope.launch {
+                            bringIntoViewRequester.bringIntoView()
+                        }
+                    }
+                }*/
             )
             Button(
                 onClick = {
@@ -260,6 +270,7 @@ fun BottomSheetLayout(context: Context, onAdd: (Array<Spot>) -> Unit) {
                 modifier = Modifier
                     .padding(horizontal = 5.dp)
                     .weight(1F),
+                    //.bringIntoViewRequester(bringIntoViewRequester),
                 label = { Text(text = "Longitude") },
                 placeholder = { Text("Longitude") },
                 keyboardOptions = KeyboardOptions(
