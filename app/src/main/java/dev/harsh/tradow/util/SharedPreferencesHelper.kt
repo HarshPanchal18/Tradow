@@ -1,8 +1,8 @@
-package com.example.geofencing.util
+package dev.harsh.tradow.util
 
 import android.content.Context
-import com.example.geofencing.model.Spot
 import com.google.gson.Gson
+import dev.harsh.tradow.model.Spot
 
 object SharedPreferencesHelper {
 

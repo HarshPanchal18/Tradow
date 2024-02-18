@@ -1,4 +1,4 @@
-package com.example.geofencing.util
+package dev.harsh.tradow.util
 
 const val LATITUDE = "latitude"
 const val LONGITUDE = "longitude"

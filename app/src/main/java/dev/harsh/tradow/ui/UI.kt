@@ -1,4 +1,4 @@
-package com.example.geofencing.ui
+package dev.harsh.tradow.ui
 
 import android.Manifest
 import android.app.Activity
@@ -52,7 +52,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusDirection
@@ -75,14 +74,14 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.geofencing.R
-import com.example.geofencing.model.Spot
-import com.example.geofencing.service.BackgroundService
-import com.example.geofencing.util.LATITUDE
-import com.example.geofencing.util.LONGITUDE
-import com.example.geofencing.util.SharedPreferencesHelper
-import com.example.geofencing.util.SharedPreferencesHelper.PREF_NAME
-import com.example.geofencing.util.noRippleClickable
-import com.example.geofencing.util.showShortToast
+import dev.harsh.tradow.util.LATITUDE
+import dev.harsh.tradow.util.LONGITUDE
+import dev.harsh.tradow.util.SharedPreferencesHelper
+import dev.harsh.tradow.util.SharedPreferencesHelper.PREF_NAME
+import dev.harsh.tradow.util.noRippleClickable
+import dev.harsh.tradow.util.showShortToast
+import dev.harsh.tradow.model.Spot
+import dev.harsh.tradow.service.BackgroundService
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -107,7 +106,6 @@ fun BottomSheet(context: Context, spots: MutableState<Array<Spot>>, onDismiss: (
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BottomSheetLayout(context: Context, onAdd: (Array<Spot>) -> Unit) {
     var spotTitle by remember { mutableStateOf("") }

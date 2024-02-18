@@ -1,4 +1,4 @@
-package com.example.geofencing.ui
+package dev.harsh.tradow.ui
 
 object Screens {
     const val Splash = "Splash"

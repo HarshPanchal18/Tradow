@@ -1,4 +1,4 @@
-package com.example.geofencing.model
+package dev.harsh.tradow.model
 
 data class Spot(
     val title: String = "",

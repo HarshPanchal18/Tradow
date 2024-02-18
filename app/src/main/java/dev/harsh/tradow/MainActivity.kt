@@ -1,16 +1,18 @@
-package com.example.geofencing
+package dev.harsh.tradow
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -38,28 +40,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.startForegroundService
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.geofencing.model.Spot
-import com.example.geofencing.service.BackgroundService
-import com.example.geofencing.ui.BottomRow
-import com.example.geofencing.ui.BottomSheet
-import com.example.geofencing.ui.Screens
-import com.example.geofencing.ui.SplashScreen
-import com.example.geofencing.ui.SpotItem
-import com.example.geofencing.ui.theme.GeofencingTheme
-import com.example.geofencing.util.SharedPreferencesHelper.PREF_NAME
-import com.example.geofencing.util.SharedPreferencesHelper.loadSpots
-import com.example.geofencing.util.SharedPreferencesHelper.updateSpots
-import com.example.geofencing.util.showLongToast
-import com.example.geofencing.util.showShortToast
+import com.example.geofencing.R
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import dev.harsh.tradow.model.Spot
+import dev.harsh.tradow.service.BackgroundService
+import dev.harsh.tradow.ui.BottomRow
+import dev.harsh.tradow.ui.BottomSheet
+import dev.harsh.tradow.ui.Screens
+import dev.harsh.tradow.ui.SplashScreen
+import dev.harsh.tradow.ui.SpotItem
+import dev.harsh.tradow.ui.theme.GeofencingTheme
+import dev.harsh.tradow.util.SharedPreferencesHelper.PREF_NAME
+import dev.harsh.tradow.util.SharedPreferencesHelper.loadSpots
+import dev.harsh.tradow.util.SharedPreferencesHelper.updateSpots
+import dev.harsh.tradow.util.showLongToast
+import dev.harsh.tradow.util.showShortToast
 
-@Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
     private lateinit var sharedPref: SharedPreferences
     private lateinit var spots: MutableState<Array<Spot>>
@@ -133,68 +133,51 @@ class MainActivity : ComponentActivity() {
 
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<out String>, grantResults: IntArray,
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            this.showShortToast("Monitoring started successfully!")
-            startForegroundService(this, Intent(this, BackgroundService::class.java))
-        } else {
-            // show an toast message asking for the permission
-            this.showLongToast("Do I really need to tell, why you should give me location access??")
-        }
-    }
-
+    // Move the task containing this activity to the back of the activity stack.
     override fun onPause() {
         super.onPause()
-        moveTaskToBack(true)
+
+        if (checkLocationPermission())
+            moveTaskToBack(true)
     }
 
     @Composable
     fun HomeScreen(forOpenBottomSheet: () -> Unit) {
+        var hasLocationPermission = false
+        val isLocationEnabled = checkLocationState()
+        val locationPermissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted)
+                hasLocationPermission = true
+            else
+                this.showLongToast("Do I really need to tell, why you should give me location access??")
+        }
+
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             bottomBar = {
                 BottomRow(
                     onStartClick = {
-                        if (ContextCompat.checkSelfPermission(
-                                this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION
-                            ) != PackageManager.PERMISSION_GRANTED
-                        ) {
-                            ActivityCompat.requestPermissions(
-                                /* activity = */ this@MainActivity as Activity,
-                                /* permissions = */
-                                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                                /* requestCode = */
-                                1
-                            )
-                        } else {
+                        if (hasLocationPermission) {
                             when {
                                 spots.value.isEmpty() -> forOpenBottomSheet()
 
                                 spots.value.any { it.isSelected } -> {
-                                    val manager =
-                                        getSystemService(LOCATION_SERVICE) as LocationManager
-                                    if (!manager.isProviderEnabled(LocationManager.GPS_PROVIDER))
-                                        this.showShortToast("Please turn on location to get started")
-                                    //startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
 
-                                    val backgroundServiceIntent =
-                                        Intent(
-                                            this@MainActivity,
-                                            BackgroundService::class.java
-                                        )
-                                    startService(backgroundServiceIntent)
-                                    //this@MainActivity.showShortToast("Service Started Successfully!")
+                                    if (isLocationEnabled) {
+                                        val backgroundServiceIntent =
+                                            Intent(this@MainActivity, BackgroundService::class.java)
+                                        startService(backgroundServiceIntent)
+                                    } else {
+                                        this.showShortToast("Please turn on location to get started")
+                                    }
                                 }
 
-                                else ->
-                                    this@MainActivity.showShortToast("Kindly choose a site to monitor!")
-
+                                else -> this@MainActivity.showShortToast("Kindly choose a site to monitor!")
                             }
+                        } else {
+                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                         }
                     },
                     onStopClick = {
@@ -267,6 +250,22 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+
+    private fun checkLocationPermission(): Boolean {
+        // Check if the location permission is granted
+        return ContextCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun checkLocationState(): Boolean {
+        val manager = getSystemService(LOCATION_SERVICE) as LocationManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            manager.isLocationEnabled
+        } else {
+            manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
         }
     }
 }

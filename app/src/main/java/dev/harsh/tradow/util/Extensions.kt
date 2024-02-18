@@ -1,4 +1,4 @@
-package com.example.geofencing.util
+package dev.harsh.tradow.util
 
 import android.content.Context
 import android.widget.Toast

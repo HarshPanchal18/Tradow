@@ -1,4 +1,4 @@
-package com.example.geofencing.ui.theme
+package dev.harsh.tradow.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

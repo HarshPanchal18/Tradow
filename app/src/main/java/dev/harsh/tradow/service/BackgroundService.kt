@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION")
 
-package com.example.geofencing.service
+package dev.harsh.tradow.service
 
 import android.Manifest
 import android.app.Notification
@@ -14,21 +14,22 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.example.geofencing.App.Companion.CHANNEL_ID
-import com.example.geofencing.MainActivity
 import com.example.geofencing.R
-import com.example.geofencing.util.LATITUDE
-import com.example.geofencing.util.LONGITUDE
-import com.example.geofencing.util.SharedPreferencesHelper
-import com.example.geofencing.util.SharedPreferencesHelper.PREF_NAME
-import com.example.geofencing.util.showShortToast
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import dev.harsh.tradow.App.Companion.CHANNEL_ID
+import dev.harsh.tradow.MainActivity
+import dev.harsh.tradow.util.LATITUDE
+import dev.harsh.tradow.util.LONGITUDE
+import dev.harsh.tradow.util.SharedPreferencesHelper
+import dev.harsh.tradow.util.SharedPreferencesHelper.PREF_NAME
+import dev.harsh.tradow.util.showShortToast
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -139,6 +140,7 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
                 val latDistance = Math.toRadians(abs(lat2 - lat1))
                 val lonDistance = Math.toRadians(abs(lon2 - lon1))
 
+                // Ref: https://www.movable-type.co.uk/scripts/latlong.html
                 val a = (sin(latDistance / 2) * sin(latDistance / 2)
                         + (cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2))
                         * sin(lonDistance / 2) * sin(lonDistance / 2)))
@@ -184,10 +186,15 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
                 .setContentIntent(pendingIntent)
                 .build()
         } else {
-            TODO("VERSION.SDK_INT < O")
+            NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Tradow monitoring is active")
+                .setContentText("Tap to return")
+                .setSmallIcon(R.drawable.ic_launcher_background)
+                .setContentIntent(pendingIntent)
+                .build()
         }
 
-        startForeground(1, notification)
+        startForeground(/* id = */ 1, /* notification = */ notification)
 
         // connect the google client
         if (this.googleApiClient != null)
@@ -202,6 +209,9 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
         if (googleApiClient?.isConnected == true)
             googleApiClient?.disconnect()
 
+        stopForeground(/* removeNotification = */ true)
+        stopLocationUpdates()
+
         audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
 
         //this.showShortToast("Service is stopping...")
@@ -212,6 +222,21 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
                 audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
         } catch (e: Exception) {
             Log.d("Normal mode", e.message.toString())
+        }
+    }
+
+    private fun stopLocationUpdates() {
+        try {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                LocationServices.getFusedLocationProviderClient(this)
+                    .removeLocationUpdates(locationCallback)
+            }
+        } catch (e: Exception) {
+            Log.e("Location updates", e.message.toString())
         }
     }
 

@@ -1,4 +1,4 @@
-package com.example.geofencing
+package dev.harsh.tradow
 
 import android.app.Application
 import android.app.NotificationChannel
