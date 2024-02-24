@@ -15,9 +15,9 @@ Take control of your phone's mode seamlessly with **Tradow**! This innovative ap
 Enjoy the convenience of having your phone adapt to your surroundings without manual adjustments.
 
 ## Features:
-* `Customizable Geofences`: Create and manage multiple geofences around locations like your workplace, library, or classroom.
+* `Customizable Geofences and range of coverage`: Create and manage multiple geo-fences around locations like your workplace, library, or classroom with area of coverage from 50 meters to 200 meters.
 * `Automatic Mode Switching`: Set your phone to switch to Vibrate Mode upon entering a geofence and back to General Mode upon leaving.
-* `Intuitive Interface`: Designate geofences and configure settings effortlessly with a user-friendly interface.
+* `Intuitive Interface`: Designate geo-fences and configure settings effortlessly with a user-friendly interface.
 * `Battery-Efficient`: Tradow is optimized for minimal battery consumption, ensuring its presence without impacting your device's performance.
 * `Privacy-Focused`: Your location data is used solely for geofence functionality and is never shared without your consent.
 

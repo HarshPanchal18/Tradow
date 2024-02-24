@@ -27,6 +27,7 @@ import dev.harsh.tradow.App.Companion.CHANNEL_ID
 import dev.harsh.tradow.MainActivity
 import dev.harsh.tradow.util.LATITUDE
 import dev.harsh.tradow.util.LONGITUDE
+import dev.harsh.tradow.util.RADIUS
 import dev.harsh.tradow.util.SharedPreferencesHelper
 import dev.harsh.tradow.util.SharedPreferencesHelper.PREF_NAME
 import dev.harsh.tradow.util.showShortToast
@@ -45,7 +46,7 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
     private lateinit var audioManager: AudioManager
     private var googleApiClient: GoogleApiClient? = null
     var gotOutOfCampus = false
-    val radiusToCheck = 100.0 // meter
+    var radiusToCheck = 100F // meter
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -85,6 +86,8 @@ class BackgroundService : Service(), GoogleApiClient.ConnectionCallbacks,
                 super.onLocationResult(locationResult)
 
                 val pref = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+
+                radiusToCheck = pref.getFloat(RADIUS, 100F)
 
                 val location = locationResult.lastLocation
                 val latitude = location?.latitude ?: 0.0

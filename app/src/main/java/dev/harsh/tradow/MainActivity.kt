@@ -27,11 +27,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
@@ -54,6 +58,7 @@ import dev.harsh.tradow.ui.Screens
 import dev.harsh.tradow.ui.SplashScreen
 import dev.harsh.tradow.ui.SpotItem
 import dev.harsh.tradow.ui.theme.GeofencingTheme
+import dev.harsh.tradow.util.RADIUS
 import dev.harsh.tradow.util.SharedPreferencesHelper.PREF_NAME
 import dev.harsh.tradow.util.SharedPreferencesHelper.loadSpots
 import dev.harsh.tradow.util.SharedPreferencesHelper.updateSpots
@@ -222,22 +227,54 @@ class MainActivity : ComponentActivity() {
             }
 
             if (spots.value.isNotEmpty()) {
-                Card {
-                    LazyColumn(modifier = Modifier.padding(10.dp)) {
-                        items(spots.value) { spot ->
-                            SpotItem(
-                                spot = spot,
-                                onClear = {
-                                    val spotList = spots.value.toMutableList()
-                                    spotList.remove(spot)
-                                    spots.value = spotList.toTypedArray()
 
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+
+                        val state =
+                            remember { mutableFloatStateOf(sharedPref.getFloat(RADIUS, 50F)) }
+
+                        Slider(
+                            value = state.floatValue,
+                            onValueChange = {
+                                state.floatValue = it
+                                sharedPref.edit().apply { putFloat(RADIUS, it) }.apply()
+                            },
+                            steps = 2,
+                            valueRange = 50F..200F,
+                            modifier = Modifier
+                                .weight(1F)
+                                .padding(end = 8.dp),
+                            colors = SliderDefaults.colors(
+                                activeTrackColor = MaterialTheme.colorScheme.onSurface,
+                                thumbColor = MaterialTheme.colorScheme.inverseSurface
+                            )
+                        )
+
+                        Text(
+                            text = "Radius: ${state.floatValue.toInt()}M",
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Card {
+                        LazyColumn(modifier = Modifier.padding(10.dp)) {
+                            items(spots.value) { spot ->
+                                SpotItem(
+                                    spot = spot,
+                                    onClear = {
+                                        val spotList = spots.value.toMutableList()
+                                        spotList.remove(spot)
+                                        spots.value = spotList.toTypedArray()
+
+                                        updateSpots(this@MainActivity, spots.value)
+                                    }
+                                ) {
+                                    spots.value =
+                                        spots.value.map { it.copy(isSelected = it == spot) }
+                                            .toTypedArray()
                                     updateSpots(this@MainActivity, spots.value)
                                 }
-                            ) {
-                                spots.value = spots.value.map { it.copy(isSelected = it == spot) }
-                                    .toTypedArray()
-                                updateSpots(this@MainActivity, spots.value)
                             }
                         }
                     }
