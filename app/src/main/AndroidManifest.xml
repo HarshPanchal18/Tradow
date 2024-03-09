@@ -38,6 +38,18 @@
             android:enabled="true"
             android:foregroundServiceType="location" />
 
+        <service
+            android:name="dev.harsh.tradow.quicksetting.TrackingQsTile"
+            android:enabled="true"
+            android:icon="@drawable/location"
+            android:roundIcon="@drawable/location"
+            android:exported="true"
+            android:label="Start Tradow tracking"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
