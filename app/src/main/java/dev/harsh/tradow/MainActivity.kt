@@ -45,6 +45,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -110,6 +111,7 @@ class MainActivity : ComponentActivity() {
 
                 var pressedTime: Long = 0
                 BackHandler(enabled = true) {
+                    sharedPref.edit(commit = true) {}
                     if (pressedTime + 1800 > System.currentTimeMillis())
                         finish()
                     else
@@ -142,8 +144,15 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
 
+        sharedPref.edit(commit = true) {}
+
         if (checkLocationPermission())
             moveTaskToBack(true)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        sharedPref.edit(commit = true) {}
     }
 
     @Composable
@@ -179,7 +188,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
 
-                                else -> this@MainActivity.showShortToast("Kindly choose a site to monitor!")
+                                else -> this@MainActivity.showShortToast("Kindly choose a spot to track!")
                             }
                         } else {
                             locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)

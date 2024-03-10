@@ -77,4 +77,7 @@ dependencies {
     implementation(libs.accompanist.permissions)
     implementation(libs.accompanist.systemuicontroller)
     implementation(libs.gson)
+
+    implementation(libs.androidx.glance)
+    implementation(libs.androidx.glance.appwidget)
 }
