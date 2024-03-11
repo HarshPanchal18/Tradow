@@ -20,6 +20,8 @@ Enjoy the convenience of having your phone adapt to your surroundings without ma
 * `Intuitive Interface`: Designate geo-fences and configure settings effortlessly with a user-friendly interface.
 * `Battery-Efficient`: Tradow is optimized for minimal battery consumption, ensuring its presence without impacting your device's performance.
 * `Privacy-Focused`: Your location data is used solely for geofence functionality and is never shared without your consent.
+* `Quick shortcut`: Activate Tradow tracking with just one click from drawer.
+* `Home screen Widget`: Providing facility to show current active spot on home screen widget.
 
 ## Getting Started:
 1. Download and install Tradow from the [Release](https://github.com/HarshPanchal18/Tradow/releases).
